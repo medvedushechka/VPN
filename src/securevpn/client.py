@@ -13,7 +13,8 @@ from pathlib import Path
 from ipaddress import IPv4Address
 
 from .config import VPNConfig, ClientConfig
-from .crypto import KeyManager, NoiseHandshake, SessionCipher, create_cipher
+from .crypto import KeyManager, NoiseHandshake, create_cipher
+from .crypto.cipher import SessionCipher
 from .network import UDPTransport, UDPEndpoint, UDPConnection, TunInterface
 from .obfuscation import TLSObfuscator, HTTPObfuscator, DNSObfuscator, ObfuscationConfig
 from .exceptions import SecureVPNError, NetworkError, HandshakeError
