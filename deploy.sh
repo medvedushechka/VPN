@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Конфигурация
-REPO_URL="https://github.com/YOUR_USERNAME/SecureVPN.git"  # Замените на ваш репозиторий
+REPO_URL="https://github.com/medvedushechka/VPN.git"
 INSTALL_DIR="/opt/securevpn"
 CONFIG_DIR="/etc/securevpn"
 LOG_DIR="/var/log/securevpn"
