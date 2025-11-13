@@ -36,29 +36,46 @@ SecureVPN/
 - **Hashing**: BLAKE2s
 - **Transport**: UDP with obfuscation layer
 
-## 📋 Requirements
+## Requirements
 - Python 3.11+
 - Linux with TUN/TAP support
 - Root privileges for network interface management
 
-## 🛠️ Quick Deployment
+## Quick Deployment
 
 ### Server Deployment (Ubuntu 24.04.3 LTS)
 ```bash
 # On your server (79.132.136.194)
-git clone https://github.com/YOUR_USERNAME/SecureVPN.git /opt/securevpn-source
+git clone https://github.com/medvedushechka/VPN.git /opt/securevpn-source
 cd /opt/securevpn-source
 chmod +x deploy.sh
 ./deploy.sh
 ```
 
-### Manual Installation
-```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/SecureVPN.git
-cd SecureVPN
+## 🎨 GUI Clients
 
-# Install dependencies
+Готовые графические клиенты с красивым интерфейсом:
+
+### 💻 Windows Client
+- **PyQt6** интерфейс с системным треем
+- **Автозапуск** и работа в фоновом режиме
+- **Один клик** подключения к VPN
+- Скачать: `gui-clients/windows/`
+
+### 📱 Android Client  
+- **Material Design** интерфейс
+- **Фоновый режим** с уведомлениями
+- **Простая авторизация** через API
+- Скачать: `gui-clients/android/`
+
+**Учетные данные:** `Medvedushkaa` / `1q2w3e4r5t6y`
+
+[📖 Подробная документация GUI клиентов](./gui-clients/README.md)
+
+## 🛠️ Manual Installation
+
+### Install dependencies
+```bash
 pip install -r requirements.txt
 
 # Install system dependencies (Ubuntu/Debian)

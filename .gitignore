@@ -284,7 +284,12 @@ sandbox/
 *.tar.xz
 *.zip
 
-# GUI application files (will be separate project)
-gui/
-desktop_app/
-client_app/
+# GUI Applications build artifacts
+gui-clients/windows/dist/
+gui-clients/windows/build/
+gui-clients/windows/*.spec
+gui-clients/android/bin/
+gui-clients/android/.buildozer/
+gui-clients/android/buildozer.spec.bak
+!gui-clients/
+!desktop_app/
