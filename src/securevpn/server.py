@@ -19,6 +19,7 @@ from .network import UDPServer, UDPEndpoint, UDPConnection, TunInterface
 from .obfuscation import TLSObfuscator, ObfuscationConfig
 from .auth import AuthServer, UserManager
 from .exceptions import SecureVPNError, NetworkError, HandshakeError
+from .simple_vpn_adapter import SimpleVPNAdapter
 
 
 class VPNPeer:
@@ -92,6 +93,9 @@ class SecureVPNServer:
         self.user_manager = UserManager()
         self.auth_server: Optional[AuthServer] = None
         
+        # Simple VPN adapter for GUI clients
+        self.simple_vpn_adapter: Optional[SimpleVPNAdapter] = None
+        
         # Peer management
         self.peers: Dict[int, VPNPeer] = {}  # peer_id -> VPNPeer
         self.ip_assignments: Dict[str, int] = {}  # ip -> peer_id
@@ -132,6 +136,9 @@ class SecureVPNServer:
             
             # Start authentication server
             await self._setup_auth_server()
+            
+            # Start Simple VPN adapter for GUI clients
+            await self._setup_simple_vpn_adapter()
             
             # Start UDP server
             bind_endpoint = UDPEndpoint(
@@ -273,12 +280,23 @@ class SecureVPNServer:
         self.auth_server = AuthServer(
             user_manager=self.user_manager,
             vpn_config=self.config,
-            host="127.0.0.1",  # Only local access for security
+            host="0.0.0.0",  # External access for GUI clients
             port=8080
         )
         
         await self.auth_server.start()
-        self.logger.info("Authentication server started on http://127.0.0.1:8080")
+        self.logger.info("Authentication server started on http://0.0.0.0:8080")
+    
+    async def _setup_simple_vpn_adapter(self) -> None:
+        """Setup Simple VPN adapter for GUI clients"""
+        # Запускаем адаптер на порту 51821 (чтобы не конфликтовать с основным сервером)
+        self.simple_vpn_adapter = SimpleVPNAdapter(
+            host="0.0.0.0",
+            port=51821  # Отдельный порт для GUI клиентов
+        )
+        
+        await self.simple_vpn_adapter.start()
+        self.logger.info("Simple VPN adapter started on 0.0.0.0:51821 for GUI clients")
     
     async def _handle_handshake_initiation(self, connection: UDPConnection, data: bytes) -> None:
         """Handle handshake initiation from client"""
