@@ -206,7 +206,11 @@ class TunInterface:
         stdout, stderr = await result.communicate()
         
         if result.returncode != 0:
-            raise TunnelError(f"Failed to set IP address: {stderr.decode()}")
+            # На Windows отсутствие/ошибка интерфейса не должно ронять весь VPN-клиент.
+            # Просто выводим предупреждение и продолжаем без системной настройки IPv4.
+            msg = stderr.decode(errors="ignore").strip()
+            print(f"Warning: Failed to set IP address on interface {self.interface_name}: {msg}")
+            return
     
     async def _configure_ipv4_macos(self, address: str, network: str) -> None:
         """Configure IPv4 on macOS"""

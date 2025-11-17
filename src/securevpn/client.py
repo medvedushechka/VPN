@@ -58,6 +58,9 @@ class SecureVPNClient:
         self._key_rotation_task: Optional[asyncio.Task] = None
         self._reconnect_task: Optional[asyncio.Task] = None
         
+        # Handshake response state
+        self._handshake_response_future: Optional[asyncio.Future] = None
+        
         # Statistics
         self.bytes_sent = 0
         self.bytes_received = 0
@@ -89,6 +92,12 @@ class SecureVPNClient:
             # Start UDP transport (client mode)
             self.udp_transport = UDPTransport()
             await self.udp_transport.start()
+            
+            # Register handler for handshake response messages
+            self.udp_transport.register_message_handler(
+                NoiseHandshake.MSG_RESPONSE,
+                self._on_handshake_response
+            )
             
             # Connect to server
             server_endpoint = UDPEndpoint(
@@ -246,6 +255,10 @@ class SecureVPNClient:
                 preshared_key=None  # Could add PSK support
             )
             
+            # Prepare future to receive handshake response
+            loop = asyncio.get_running_loop()
+            self._handshake_response_future = loop.create_future()
+            
             # Send initiation
             initiation_data = self.handshake.create_initiation()
             
@@ -279,22 +292,21 @@ class SecureVPNClient:
     
     async def _wait_for_handshake_response(self, timeout: float = 10.0) -> bytes:
         """Wait for handshake response from server"""
-        start_time = time.time()
+        # Use a Future that is completed by the UDP message handler
+        if self._handshake_response_future is None or self._handshake_response_future.done():
+            loop = asyncio.get_running_loop()
+            self._handshake_response_future = loop.create_future()
         
-        while time.time() - start_time < timeout:
-            try:
-                # This is simplified - in practice you'd set up proper packet handling
-                # For now, we'll simulate receiving the response
-                await asyncio.sleep(0.1)
-                
-                # In real implementation, this would come from UDP connection
-                # For demo purposes, we'll return dummy data
-                return b"dummy_handshake_response"
-                
-            except asyncio.TimeoutError:
-                continue
-        
-        raise HandshakeError("Handshake response timeout")
+        try:
+            return await asyncio.wait_for(self._handshake_response_future, timeout)
+        except asyncio.TimeoutError:
+            raise HandshakeError("Handshake response timeout")
+    
+    async def _on_handshake_response(self, connection: UDPConnection, data: bytes) -> None:
+        """Handle handshake response packet from server"""
+        # Store the raw response data for the handshake logic
+        if self._handshake_response_future and not self._handshake_response_future.done():
+            self._handshake_response_future.set_result(data)
     
     async def _setup_session_cipher(self) -> None:
         """Setup session cipher for data encryption"""

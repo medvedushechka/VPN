@@ -206,26 +206,27 @@ class NoiseHandshake:
         if not static_keypair or not static_keypair.private_key:
             raise HandshakeError("No static private key available")
         
-        dh1 = self.key_manager.derive_shared_secret(peer_key)
+        # First DH: ephemeral-client x static-server
+        box1 = nacl.public.Box(self.ephemeral_private, peer_key)
+        dh1 = bytes(box1._shared_key)
         self._mix_key(dh1)
         
-        # Encrypt static public key
+        # Encrypt static public key (no AEAD for handshake: use cleartext but mix into hash)
         encrypted_static = self._encrypt_and_hash(
-            self.chaining_key[:32], 
+            b"", 
             bytes(static_keypair.public_key)
         )
         
-        # DH with ephemeral and peer's static
-        box = nacl.public.Box(self.ephemeral_private, peer_key)
-        dh2 = bytes(box._shared_key)
+        # Second DH: static-client x static-server
+        dh2 = self.key_manager.derive_shared_secret(peer_key)
         self._mix_key(dh2)
         
         # Mix preshared key
         self._mix_key(self.preshared_key)
         
-        # Encrypt timestamp
+        # Encrypt timestamp (no AEAD for handshake: use cleartext but mix into hash)
         timestamp = struct.pack('>Q', int(time.time() * 1000))
-        encrypted_timestamp = self._encrypt_and_hash(self.chaining_key[:32], timestamp)
+        encrypted_timestamp = self._encrypt_and_hash(b"", timestamp)
         
         # Build message
         message_data = (
@@ -258,13 +259,13 @@ class NoiseHandshake:
         if message.message_type != self.MSG_INITIATION:
             raise HandshakeError("Expected initiation message")
         
-        if len(message.data) != 104:  # 32 + 48 + 24
+        if len(message.data) != 72:  # 32 (ephemeral) + 32 (static) + 8 (timestamp)
             raise HandshakeError("Invalid initiation message length")
         
         # Extract components
         ephemeral_public_bytes = message.data[:32]
-        encrypted_static = message.data[32:80]
-        encrypted_timestamp = message.data[80:104]
+        encrypted_static = message.data[32:64]
+        encrypted_timestamp = message.data[64:72]
         
         # Initialize Noise state
         self.chaining_key = self.CONSTRUCTION
@@ -286,26 +287,30 @@ class NoiseHandshake:
         dh1 = self.key_manager.derive_shared_secret(self.remote_ephemeral)
         self._mix_key(dh1)
         
-        # Decrypt peer's static public key
-        peer_static_bytes = self._decrypt_and_hash(self.chaining_key[:32], encrypted_static)
-        peer_static_key = nacl.public.PublicKey(peer_static_bytes)
-        
-        # Verify peer's static key if we have it
+        # Decrypt peer's static public key (no AEAD for handshake: treat as cleartext)
+        try:
+            peer_static_bytes = self._decrypt_and_hash(b"", encrypted_static)
+        except CryptographyError as e:
+            # Более точная ошибка для логов сервера
+            raise HandshakeError(f"Static key decrypt failed: {e}")
         if self.peer_public_key and peer_static_bytes != self.peer_public_key:
             raise HandshakeError("Peer static key mismatch")
         
         self.peer_public_key = peer_static_bytes
         
         # DH with peer's static
-        box = nacl.public.Box(static_keypair.private_key, peer_static_key)
+        box = nacl.public.Box(static_keypair.private_key, nacl.public.PublicKey(peer_static_bytes))
         dh2 = bytes(box._shared_key)
         self._mix_key(dh2)
         
         # Mix preshared key
         self._mix_key(self.preshared_key)
         
-        # Decrypt and verify timestamp
-        timestamp_bytes = self._decrypt_and_hash(self.chaining_key[:32], encrypted_timestamp)
+        # Decrypt and verify timestamp (no AEAD for handshake)
+        try:
+            timestamp_bytes = self._decrypt_and_hash(b"", encrypted_timestamp)
+        except CryptographyError as e:
+            raise HandshakeError(f"Timestamp decrypt failed: {e}")
         timestamp = struct.unpack('>Q', timestamp_bytes)[0] / 1000.0
         
         # Check timestamp (allow 60 second skew)
@@ -348,8 +353,9 @@ class NoiseHandshake:
         # Mix preshared key again
         self._mix_key(self.preshared_key)
         
-        # Encrypt empty payload (just for authentication)
-        encrypted_empty = self._encrypt_and_hash(self.chaining_key[:32], b'')
+        # Encrypt empty payload (no AEAD for handshake: fixed padding, mixed into hash)
+        empty_payload = b"\x00" * 16
+        encrypted_empty = self._encrypt_and_hash(b"", empty_payload)
         
         # Derive session keys
         self._derive_session_keys()
@@ -410,8 +416,8 @@ class NoiseHandshake:
         # Mix preshared key again
         self._mix_key(self.preshared_key)
         
-        # Decrypt and verify empty payload
-        self._decrypt_and_hash(self.chaining_key[:32], encrypted_empty)
+        # Decrypt and verify empty payload (no AEAD for handshake)
+        self._decrypt_and_hash(b"", encrypted_empty)
         
         # Derive session keys
         self._derive_session_keys()

@@ -82,7 +82,10 @@ class UDPTransport:
                 self.socket = await asyncio_dgram.bind(self.bind_endpoint.address)
             else:
                 # Client mode - connect to remote
-                self.socket = await asyncio_dgram.connect(('0.0.0.0', 0))
+                # On Windows, connecting to 0.0.0.0:0 is invalid (WinError 10049).
+                # For client mode we only need a local UDP socket bound to an ephemeral port;
+                # remote address is specified per-packet in send_to()/UDPConnection.
+                self.socket = await asyncio_dgram.bind(('0.0.0.0', 0))
             
             self._running = True
             self._receive_task = asyncio.create_task(self._receive_loop())

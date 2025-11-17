@@ -51,13 +51,20 @@ class AuthServer:
         # CORS middleware for GUI applications
         self.app.middlewares.append(self._cors_middleware)
     
-    async def _cors_middleware(self, request: web_request.Request, handler) -> Response:
+        self.app.router.add_get('/config', self._handle_simple_config)
+        
+        # CORS middleware for GUI applications
+        self.app.middlewares.append(self._cors_middleware)
+    
+    async def _cors_middleware(self, app, handler):
         """CORS middleware for cross-origin requests"""
-        response = await handler(request)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        return response
+        async def middleware_handler(request: web_request.Request) -> Response:
+            response = await handler(request)
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            return response
+        return middleware_handler
     
     async def _handle_login(self, request: web_request.Request) -> Response:
         """Handle user login"""
@@ -178,6 +185,24 @@ class AuthServer:
                 }
             })
             
+        except Exception as e:
+            return web.json_response({
+                'success': False,
+                'error': f'Internal server error: {str(e)}'
+            }, status=500)
+    
+    async def _handle_simple_config(self, request: web_request.Request) -> Response:
+        try:
+            server_address = self._get_server_address()
+            server_port = self.vpn_config.server.port
+            dns_servers = self.vpn_config.network.dns_servers
+            
+            return web.json_response({
+                'success': True,
+                'server_ip': server_address,
+                'server_port': server_port,
+                'dns': dns_servers
+            })
         except Exception as e:
             return web.json_response({
                 'success': False,
