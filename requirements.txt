@@ -1,0 +1,37 @@
+# Core dependencies
+pynacl>=1.5.0              # Cryptography (libsodium bindings)
+cryptography>=41.0.0       # Additional crypto functions
+click>=8.1.0               # CLI framework
+pydantic>=2.0.0            # Data validation and settings
+asyncio-dgram>=2.1.2       # Async UDP sockets
+psutil>=5.9.0              # System information
+
+# Network layer
+scapy>=2.5.0               # Packet manipulation
+netifaces>=0.11.0          # Network interface information
+python-iptables>=1.0.1     # Firewall management (Linux)
+
+# Configuration and logging
+pyyaml>=6.0                # YAML configuration files
+structlog>=23.0.0          # Structured logging
+rich>=13.0.0               # Rich console output
+
+# Performance and monitoring
+uvloop>=0.17.0             # Fast event loop (Linux/macOS)
+prometheus-client>=0.17.0  # Metrics collection
+
+# HTTP API for GUI clients
+aiohttp>=3.9.0             # Async HTTP server
+aiofiles>=23.2.0           # Async file operations
+
+# Development and testing
+pytest>=7.4.0             # Testing framework
+pytest-asyncio>=0.21.0    # Async testing
+pytest-cov>=4.1.0         # Coverage reporting
+black>=23.0.0              # Code formatting
+flake8>=6.0.0              # Linting
+mypy>=1.5.0                # Type checking
+
+# Optional: Windows support
+pywin32>=306; sys_platform == "win32"  # Windows API access
+wintun>=0.0.3; sys_platform == "win32" # Windows TUN driver

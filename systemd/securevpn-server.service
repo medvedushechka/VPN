@@ -1,0 +1,51 @@
+[Unit]
+Description=SecureVPN Server - High-Performance Encrypted VPN
+Documentation=https://github.com/securevpn/securevpn
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Working directory
+WorkingDirectory=/opt/securevpn
+
+# Environment
+Environment=PYTHONPATH=/opt/securevpn/src
+Environment=SECUREVPN_CONFIG=/etc/securevpn/server.conf
+
+# Command
+ExecStart=/opt/securevpn/venv/bin/python -m securevpn.cli server --config /etc/securevpn/server.conf
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Process management
+Restart=always
+RestartSec=5
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Security settings
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/securevpn /etc/securevpn /dev/net/tun
+
+# Capabilities (required for TUN interface)
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_MODULE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=securevpn-server
+
+[Install]
+WantedBy=multi-user.target
