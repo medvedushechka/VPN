@@ -1,0 +1,27 @@
+# GUI Framework
+PyQt6>=6.6.0
+
+# HTTP requests
+requests>=2.31.0
+urllib3>=2.0.0
+
+# System integration
+pywin32>=306
+winshell>=0.6
+
+# VPN client
+wireguard-tools>=0.4.0
+
+# Utilities
+psutil>=5.9.0
+ping3>=4.0.0
+
+# Packaging
+pyinstaller>=6.0.0
+auto-py-to-exe>=2.4.0
+
+# Styling
+qt-material>=2.14
+
+# Image processing
+Pillow>=10.0.0
